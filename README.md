@@ -38,4 +38,45 @@ python3 inspect_transactions.py
 - El script genera un reporte con los resultados de la inspección, indicando si los archivos cumplen con los estándares definidos.
 
 
+# Parte 2. 
+Decisión sobre la limpieza de datos
+Durante la fase de limpieza de datos, se evaluaron dos enfoques:
+
+## Limpieza de todas las columnas:
+
+ Ventaja: Garantiza máxima calidad y consistencia en todos los campos.
+Desventaja: Puede eliminar una gran cantidad de registros por valores faltantes o inconsistentes en columnas poco relevantes, reduciendo el volumen de datos útil para análisis y detección de fraude.
+
+Datos totales después de limpieza:
+
+* Cantidad de filas originales: 100
+* Cantidad de filas después de limpieza: 54
+
+
+## Limpieza solo de columnas críticas:
+
+Ventaja: Preserva más registros, enfocándose en los campos esenciales para el análisis y la detección de transacciones sospechosas.
+Desventaja: Puede dejar inconsistencias menores en columnas no críticas, pero no afecta la calidad del análisis principal.
+
+Decisión tomada:
+Se optó por limpiar únicamente las columnas críticas para el proceso de análisis y detección de fraude:
+
+* transaction_id
+* user_id
+* merchant_id
+* amount
+* currency
+* status
+* timestamp
+* payment_method
+* country
+
+Esta decisión permite mantener la mayor cantidad de datos posible, asegurando la calidad en los campos relevantes y facilitando la detección de patrones sospechosos sin sacrificar volumen de información.
+
+## Justificación numérica:
+
+Haciendo limpieza de columnas críticas los resultados son mejores: 
+* Cantidad de filas originales: 100
+* Cantidad de filas después de limpieza: 93
+
 

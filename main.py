@@ -66,12 +66,57 @@ def clean_data(df):
         pd.DataFrame: Cleaned transaction data
     """
     # YOUR CODE HERE
-    # Example structure:
-    # df_clean = df.copy()
-    # ... your cleaning logic ...
-    # return df_clean
+    # Validación de DataFrame vacío
+    if df.empty:
+        raise ValueError("El archivo CSV está vacío. No se puede procesar.")
 
-    raise NotImplementedError("clean_data() function needs to be implemented")
+    df_clean = df.copy()
+
+    # Si el DataFrame tiene una sola columna, probablemente no se leyó correctamente
+    if len(df_clean.columns) == 1:
+        df_clean = pd.read_csv(df_clean, delimiter=';')
+
+    # Definir columnas críticas
+    columnas_criticas = [
+        'transaction_id', 'user_id', 'merchant_id', 'amount', 'currency',
+        'status', 'timestamp', 'payment_method', 'country'
+    ]
+
+    # Validar que existan las columnas críticas
+    faltantes = [col for col in columnas_criticas if col not in df_clean.columns]
+    if faltantes:
+        raise ValueError(f"Faltan columnas críticas en el DataFrame: {faltantes}")
+
+    # Filtrar solo las columnas críticas
+    df_clean = df_clean[columnas_criticas].copy()
+
+    # Eliminar filas con valores nulos en columnas críticas
+    df_clean.dropna(subset=columnas_criticas, inplace=True)
+
+    # Eliminar duplicados considerando solo columnas críticas
+    df_clean.drop_duplicates(subset=columnas_criticas, inplace=True)
+
+    # Estandarizar y validar tipos en columnas tipo texto
+    for col in ['transaction_id', 'user_id', 'merchant_id', 'currency', 'status', 'payment_method', 'country']:
+        df_clean[col] = df_clean[col].fillna('').astype(str).str.upper().str.strip()
+
+    # Convertir columna 'amount' a numérico
+    df_clean['amount'] = pd.to_numeric(df_clean['amount'], errors='coerce')
+
+    # Convertir columna 'timestamp' a datetime
+    df_clean['timestamp'] = pd.to_datetime(df_clean['timestamp'], errors='coerce')
+    df_clean.dropna(subset=['timestamp'], inplace=True)
+
+    # Manejo de outliers en 'amount' usando IQR
+    q1 = df_clean['amount'].quantile(0.25)
+    q3 = df_clean['amount'].quantile(0.75)
+    iqr = q3 - q1
+    lower_bound = q1 - 1.5 * iqr
+    upper_bound = q3 + 1.5 * iqr
+    df_clean = df_clean[(df_clean['amount'] >= lower_bound) & (df_clean['amount'] <= upper_bound)]
+
+    return df_clean
+    #raise NotImplementedError("clean_data() function needs to be implemented")
 
 
 def detect_suspicious_transactions(df):
@@ -93,14 +138,46 @@ def detect_suspicious_transactions(df):
         tuple: (normal_df, suspicious_df) - DataFrames split by suspicion status
     """
     # YOUR CODE HERE
-    # Example structure:
-    # df['is_suspicious'] = False
-    # ... your detection logic ...
-    # suspicious_df = df[df['is_suspicious'] == True]
-    # normal_df = df[df['is_suspicious'] == False]
-    # return normal_df, suspicious_df
+    # Inicializar columna de sospecha
+    df = df.copy()
+    df['is_suspicious'] = False
 
-    raise NotImplementedError("detect_suspicious_transactions() function needs to be implemented")
+    # 1. Montos inusualmente altos (mayores al percentil 99)
+    high_amount_threshold = df['amount'].quantile(0.99)
+    df.loc[df['amount'] > high_amount_threshold, 'is_suspicious'] = True
+
+    # 2. Múltiples intentos fallidos del mismo usuario (status == 'declined')
+    if 'user_id' in df.columns and 'status' in df.columns:
+        failed_attempts = df[df['status'].str.lower() == 'declined'].groupby('user_id').size()
+        suspicious_users = failed_attempts[failed_attempts >= 3].index
+        df.loc[df['user_id'].isin(suspicious_users), 'is_suspicious'] = True
+
+    # 3. Flaggear transacciones declined con códigos de seguridad (ejemplo: security_code == 'FRAUD' o 'BLOCKED')
+    if 'security_code' in df.columns:
+        df.loc[df['security_code'].isin(['FRAUD', 'BLOCKED']), 'is_suspicious'] = True
+
+    # 4. Detectar patrones anómalos: múltiples transacciones en menos de 1 minuto por usuario
+    if 'user_id' in df.columns:
+        df_sorted = df.sort_values(['user_id', 'timestamp'])
+        df_sorted['time_diff'] = df_sorted.groupby('user_id')['timestamp'].diff().dt.total_seconds()
+        rapid_tx = df_sorted[(df_sorted['time_diff'] <= 60) & (df_sorted['time_diff'] > 0)]
+        df.loc[rapid_tx.index, 'is_suspicious'] = True
+
+    # 5. Transacciones internacionales de alto riesgo (país distinto al merchant y monto alto)
+    if 'merchant_country' in df.columns:
+        intl_risk = (df['country'] != df['merchant_country']) & (df['amount'] > high_amount_threshold)
+        df.loc[intl_risk, 'is_suspicious'] = True
+
+    # 6. Otros patrones: transacciones en horarios inusuales (ejemplo: entre 00:00 y 05:00)
+    df['hour'] = df['timestamp'].dt.hour
+    df.loc[df['hour'].between(0, 5), 'is_suspicious'] = True
+
+    # Separar DataFrames
+    suspicious_df = df[df['is_suspicious']].drop(columns=['is_suspicious', 'hour'], errors='ignore')
+    normal_df = df[~df['is_suspicious']].drop(columns=['is_suspicious', 'hour'], errors='ignore')
+
+    #raise NotImplementedError("detect_suspicious_transactions() function needs to be implemented")
+    return normal_df, suspicious_df
 
 
 def process_batch(raw_file):
@@ -185,3 +262,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
