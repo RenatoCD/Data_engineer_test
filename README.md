@@ -74,7 +74,7 @@ Creación y aplicación de funciones:
 * Elimina valores nulos y duplicados en las columnas críticas.
 * Estandariza formatos de texto (mayúsculas, sin espacios) en campos clave como currency, país, etc.
 * Convierte tipos de datos (numéricos y fechas) correctamente.
-* Maneja outliers en la columna amount usando el método IQR. (Lo dejamos comentado, ya que esos outliers puedens ser útiles para detección de fraudes)
+* Maneja outliers en la columna amount usando el método IQR. (Lo dejamos comentado, ya que esos outliers pueden ser útiles para detección de fraudes. Esta es la razón de por qué en la prueba no aparecen filas eliminadas)
 * Prepara los datos para la detección de fraude, pero no guarda el DataFrame limpio directamente; lo pasa a la siguiente etapa del pipeline.
 
 **Decisión sobre la limpieza de datos**.
