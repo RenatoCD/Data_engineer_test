@@ -103,6 +103,11 @@ Haciendo limpieza de columnas críticas los resultados son mejores:
 * Patrones anómalos (transacciones rápidas, horarios inusuales).
 * Transacciones internacionales de alto riesgo.
 
+**Nota:**
+Lo métodos estadísticos aplicados y las regflas basadas en patrones típicos cumplen con lo solicitado. 
+Para alcanzar un nivel de optimización superior y una calibración dinámica de los criterios, sería recomendable desarrollar y evaluar un modelo de machine learning supervisado.
+No obstante, este procedimiento excede el alcance y las instrucciones del reto actual, por lo que la solución presentada prioriza robustez y flexibilidad mediante reglas basadas en el análisis estadístico de los datos.
+
 * La función retorna dos DataFrames:
 **normal_df:** transacciones normales, que se guardan en la carpeta **processed**. Y el DataFrame
 **suspicious_df:** transacciones sospechosas, que se guardan en la carpeta **suspicious**.
@@ -111,3 +116,16 @@ Haciendo limpieza de columnas críticas los resultados son mejores:
 La carpeta scripts contiene dos archivos: 
 * **test_clean.py** que prueba la función clean_data. 
 * **test_suspicious.py** que prueba la función detect_suspicious_transactions. 
+
+### Fase 3: Data Warehouse - Modelado y Almacenamiento
+**Objetivo:** Diseñar e implementar un modelo dimensional para análisis
+
+* **inspect_processed.py**: Este script permite inspeccionar los archivos CSV limpios generados por el pipeline ETL y almacenados en la carpeta **processed**. Su objetivo es mostrar las columnas disponibles, los tipos de datos y la cantidad de valores nulos en los datos finales, facilitando el diseño del modelo dimensional y la creación de las tablas en el Data Warehouse.
+
+**Uso recomendado:**
+Ejecuta este script antes de definir el esquema de las tablas en PostgreSQL para asegurarte de que el modelo dimensional se adapte a los datos realmente disponibles.
+
+Comando de ejecución:
+
+```bash
+python scripts/inspect_processed.py
