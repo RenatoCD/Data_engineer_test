@@ -129,3 +129,30 @@ Comando de ejecución:
 
 ```bash
 python scripts/inspect_processed.py
+```
+
+* **test_connection.py**
+Este script realiza una prueba simple de conexión con la base de datos PostgreSQL utilizando SQLAlchemy.
+Permite verificar rápidamente que las credenciales, el servidor y la base de datos están configurados correctamente antes de ejecutar cualquier proceso de carga o consulta.
+
+Uso recomendado:
+1. Antes de ejecutar, asegúrate de tener PostgreSQL instalado y en ejecución.
+2. Crea un archivo `.env` en la raíz del proyecto (no incluido en el repositorio) con tus credenciales:
+DB_USER=tu_usuario
+DB_PASS=tu_contraseña
+DB_NAME=tu_base_de_datos
+DB_HOST=localhost
+DB_PORT=5432
+3. Edita `test_connection.py` para reemplazar la contraseña por la tuya.
+
+5. Salida esperada:
+
+✅ Conexión exitosa a PostgreSQL
+
+![Conexión exitosa](./docs/test_connection.jpg)
+
+Comando de ejecución:
+
+```bash
+python scripts/test_connection.py
+```
