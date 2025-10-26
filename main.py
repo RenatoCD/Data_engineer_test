@@ -80,7 +80,7 @@ def clean_data(df):
     columnas_criticas = [
         'transaction_id', 'user_id', 'merchant_id', 'amount', 'currency',
         'status', 'timestamp', 'payment_method', 'country',
-        'response_message', 'attempt_number'
+        'response_message'
     ]
 
     # Validar que existan las columnas críticas

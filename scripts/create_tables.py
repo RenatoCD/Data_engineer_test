@@ -53,21 +53,23 @@ class FactTransaction(Base):
     currency = Column(String)
     status = Column(String)
     response_message = Column(String)
-    attempt_number = Column(Integer)
+    
 
 # Crear engine y las tablas
 if __name__ == "__main__":
-    # Cadena de conexión 
-    engine = create_engine("postgresql+psycopg2://postgres:xxxx@localhost:5432/db_fintech")
-    Base.metadata.create_all(engine)
-    print("Tablas creadas correctamente.")
+    try:
+        engine = create_engine("postgresql+psycopg2://postgres:admin123@localhost:5432/db_fintech")
+        Base.metadata.create_all(engine)
+        print("Tablas creadas correctamente.")
+    except Exception as e:
+        print(f"Error al crear las tablas: {e}")
 
 """
 Justificación del esquema:
 
 - Las dimensiones se diseñaron para capturar los atributos principales de usuarios, comercios, métodos de pago y tiempo, usando las columnas relevantes del CSV limpio.
 - La tabla de hechos `fact_transactions` almacena las transacciones y referencia las dimensiones mediante claves foráneas, además de incluir métricas y atributos transaccionales (monto, estado, fees, intentos, internacionalidad, etc).
-- Se priorizaron columnas que aportan valor analítico y permiten responder preguntas de negocio (por usuario, comercio, método, tiempo, país, categoría, etc).
+- Se priorizaron columnas que aportan valor analítico y permiten responder preguntas de negocio.
 - Las columnas que son identificadores o atributos repetidos se ubicaron en dimensiones para evitar redundancia y facilitar el análisis.
 - El modelo sigue el esquema estrella (star schema) recomendado para análisis OLAP y BI.
 """

@@ -234,7 +234,7 @@ Cada dimensión refleja únicamente los atributos existentes en los datos finale
 
 **Script de creación de tablas**
 
-El script create_tables.py utiliza SQLAlchemy para definir y crear automáticamente la estructura de las tablas en PostgreSQL. Solo necesitas ejecutarlo una vez para preparar la base de datos antes de cargar los datos.
+El script **create_tables.py** utiliza SQLAlchemy para definir y crear automáticamente la estructura de las tablas en PostgreSQL. Solo necesitas ejecutarlo una vez para preparar la base de datos antes de cargar los datos.
 
 Comando de ejecución:
 
@@ -242,9 +242,16 @@ Comando de ejecución:
 python scripts/create_tables.py
 ```
 
-Si la ejecución es exitosa, verás el mensaje:
+Si la ejecución falla saldrá un mensaje de error y si es exitosa, verás el mensaje:
 
-Tablas creadas correctamente.
+"Tablas creadas correctamente."
+
+![Conexión exitosa](./docs/create_table_test.jpg)
+
+Y en PostgreSQL ahora aparecen las tablas listadas:
+
+![Conexión exitosa](./docs/empty_tables.jpg)
+
 
 **Ventajas del enfoque**
 
@@ -254,3 +261,40 @@ Tablas creadas correctamente.
 
 **Nota:**
 Recuerda modificar la contraseña en la cadena de conexión del script antes de ejecutarlo.
+
+**Script de carga de datos**
+
+El script **load_to_postgres.py** utiliza SQLAlchemy para cargar automáticamente los datos limpios desde la carpeta `processed/` en las tablas del Data Warehouse en PostgreSQL. El proceso recorre cada registro del archivo CSV más reciente, valida y transforma los datos según el modelo dimensional, y los inserta en las tablas correspondientes (dimensiones y hechos).
+
+Solo necesitas ejecutarlo después de haber creado las tablas con `create_tables.py`. El script gestiona la inserción evitando duplicados en las dimensiones y asegurando la integridad referencial entre las tablas.
+
+Comando de ejecución:
+
+```bash
+python scripts/load_to_postgres.py
+```
+
+Si la ejecución es exitosa, verás el mensaje:
+
+"Datos cargados correctamente."
+
+![Conexión exitosa](./docs/data_loaded_terminal.jpg)
+
+Y en Postgres estarán cargados los datos en las tablas:
+
+![Conexión exitosa](./docs/data_loaded.jpg)
+
+En caso de errores (por ejemplo, problemas de conexión o datos inválidos), se mostrará un mensaje explicativo para facilitar la depuración.
+
+**Configuración y recomendaciones:**
+
+* Antes de ejecutar, asegúrate de que PostgreSQL esté instalado y en funcionamiento.
+* Verifica que la cadena de conexión en el script tenga tus credenciales correctas.
+* Si el script detecta un `timestamp` inválido en alguna fila, esa fila será ignorada y se mostrará un mensaje indicando el `transaction_id` afectado.
+* El proceso garantiza que solo se inserten registros válidos y consistentes con el modelo dimensional.
+
+**Ventajas del enfoque**
+
+* **Automatización:** El proceso de carga es reproducible y no requiere intervención manual.
+* **Integridad:** Solo se insertan registros válidos y consistentes con el modelo dimensional.
+* **Escalabilidad:** El script está optimizado para manejar grandes volúmenes de datos de manera eficiente.
