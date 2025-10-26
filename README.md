@@ -14,7 +14,7 @@ A continuación se documentan las fases completadas, las decisiones técnicas to
 
 # Preparación de entorno virtual:
 
-
+Acceder a una terminal.
 Crear un entorno virtual de trabajo utilizando los siguientes comandos:
 
 **py -m venv venv** 
@@ -74,7 +74,7 @@ Creación y aplicación de funciones:
 * Elimina valores nulos y duplicados en las columnas críticas.
 * Estandariza formatos de texto (mayúsculas, sin espacios) en campos clave como currency, país, etc.
 * Convierte tipos de datos (numéricos y fechas) correctamente.
-* Maneja outliers en la columna amount usando el método IQR.
+* Maneja outliers en la columna amount usando el método IQR. (Lo dejamos comentado, ya que esos outliers puedens ser útiles para detección de fraudes)
 * Prepara los datos para la detección de fraude, pero no guarda el DataFrame limpio directamente; lo pasa a la siguiente etapa del pipeline.
 
 **Decisión sobre la limpieza de datos**.
@@ -110,6 +110,7 @@ Se optó por limpiar únicamente las columnas críticas para el proceso de anál
 * timestamp
 * payment_method
 * country
+* response message
 
 Esta decisión permite mantener la mayor cantidad de datos posible, asegurando la calidad en los campos relevantes y facilitando la detección de patrones sospechosos sin sacrificar volumen de información.
 
@@ -127,12 +128,12 @@ Haciendo limpieza de columnas críticas los resultados son mejores:
 
 * Montos inusualmente altos (percentil 99).
 * Múltiples intentos fallidos del mismo usuario.
-* Flaggeo de transacciones declined con códigos de seguridad (usando tanto response_message que contenga “security” como response_code igual a 65).
+* Flaggeo de transacciones declined con códigos de seguridad (usando response_message que contenga “Security violation”).
 * Patrones anómalos (transacciones rápidas, horarios inusuales).
 * Transacciones internacionales de alto riesgo.
 
 **Nota:**
-Lo métodos estadísticos aplicados y las regflas basadas en patrones típicos cumplen con lo solicitado. 
+Lo métodos estadísticos aplicados y las reglas basadas en patrones típicos cumplen con lo solicitado. 
 Para alcanzar un nivel de optimización superior y una calibración dinámica de los criterios, sería recomendable desarrollar y evaluar un modelo de machine learning supervisado.
 No obstante, este procedimiento excede el alcance y las instrucciones del reto actual, por lo que la solución presentada prioriza robustez y flexibilidad mediante reglas basadas en el análisis estadístico de los datos.
 
@@ -142,8 +143,8 @@ No obstante, este procedimiento excede el alcance y las instrucciones del reto a
 
 ## Testeo de funciones:
 La carpeta scripts contiene dos archivos: 
-* **test_clean.py** que prueba la función clean_data. 
-* **test_suspicious.py** que prueba la función detect_suspicious_transactions. 
+* **test_clean.py:** prueba la función clean_data. 
+* **test_suspicious.py:** prueba la función detect_suspicious_transactions. 
 
 ### Fase 3: Data Warehouse - Modelado y Almacenamiento
 **Objetivo:** Diseñar e implementar un modelo dimensional para análisis
@@ -151,7 +152,7 @@ La carpeta scripts contiene dos archivos:
 * **inspect_processed.py**: Este script permite inspeccionar los archivos CSV limpios generados por el pipeline ETL y almacenados en la carpeta **processed**. Su objetivo es mostrar las columnas disponibles, los tipos de datos y la cantidad de valores nulos en los datos finales, facilitando el diseño del modelo dimensional y la creación de las tablas en el Data Warehouse.
 
 **Uso recomendado:**
-Ejecuta este script antes de definir el esquema de las tablas en PostgreSQL para asegurarte de que el modelo dimensional se adapte a los datos realmente disponibles.
+Ejecuta este script antes de definir el esquema de las tablas en PostgreSQL para asegurar que el modelo dimensional se adapte a los datos realmente disponibles.
 
 Comando de ejecución:
 
@@ -215,7 +216,7 @@ Se utiliza un **modelo estrella (star schema)** con una **tabla de hechos** (fac
 | currency          | String                             | Moneda                     |
 | status            | String                             | Estado de la transacción   |
 | response_message  | String                             | Mensaje del procesador     |
-| attempt_number    | Integer                            | Número de intentos         |
+                            
 
 
 **Dimensiones:** describen atributos de usuarios, comercios, métodos de pago y tiempo.
@@ -256,7 +257,8 @@ Y en PostgreSQL ahora aparecen las tablas listadas:
 **Ventajas del enfoque**
 
 * **Reproducibilidad:** Cualquier usuario puede levantar la estructura ejecutando el script.
-**Flexibilidad:** El modelo se adapta a los datos finales y permite análisis por usuario, comercio, método de pago y tiempo.
+
+* **Flexibilidad:** El modelo se adapta a los datos finales y permite análisis por usuario, comercio, método de pago y tiempo.
 * **Buenas prácticas:** El uso de SQLAlchemy facilita futuras migraciones y mantenimiento.
 
 **Nota:**
@@ -298,3 +300,36 @@ En caso de errores (por ejemplo, problemas de conexión o datos inválidos), se 
 * **Automatización:** El proceso de carga es reproducible y no requiere intervención manual.
 * **Integridad:** Solo se insertan registros válidos y consistentes con el modelo dimensional.
 * **Escalabilidad:** El script está optimizado para manejar grandes volúmenes de datos de manera eficiente.
+
+---
+
+# Diagrama de arquitectura del pipeline
+
+```mermaid
+flowchart TD
+    A[Generación de transacciones<br>main.py] -->|CSV cada minuto| B[Data Lake local<br>transactions/]
+    B --> C[Limpieza y detección de fraude<br>ETL Pipeline]
+    C -->|Transacciones normales| D[processed/]
+    C -->|Transacciones sospechosas| E[suspicious/]
+    D --> F[Inspección y validación<br>inspect_processed.py]
+    D --> G[Carga a Data Warehouse<br>load_to_postgres.py]
+    G --> H[(PostgreSQL<br>Data Warehouse)]
+    E --> G
+    H --> I[Consultas y análisis<br>BI / OLAP]
+
+    subgraph ETL
+        C
+    end
+    subgraph Data Warehouse
+        H
+    end
+```
+
+**Descripción del flujo:**
+- Las transacciones se generan automáticamente y se almacenan en el Data Lake local.
+- El pipeline ETL limpia los datos y detecta fraude, separando transacciones normales y sospechosas.
+- Los datos limpios se inspeccionan y luego se cargan al Data Warehouse en PostgreSQL.
+- El Data Warehouse permite consultas analíticas y visualización de resultados.
+
+
+**Nota:** Queda pendiente la parte 4 del pipeline.

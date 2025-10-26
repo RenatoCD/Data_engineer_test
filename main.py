@@ -11,6 +11,7 @@ TODO: Complete the following functions:
 
 import time
 import pandas as pd
+import numpy as np
 from datetime import datetime
 from pathlib import Path
 from scripts.generate_transactions import generate_transactions
@@ -22,6 +23,7 @@ PROCESSED_FOLDER = Path("./processed")
 SUSPICIOUS_FOLDER = Path("./suspicious")
 INTERVAL_SECONDS = 60  # Generate transactions every 1 minute
 TRANSACTIONS_PER_BATCH = 100  # Number of transactions to generate each time
+FAILED_ATTEMPT_THRESHOLD = 3
 
 
 def setup_folders():
@@ -109,12 +111,15 @@ def clean_data(df):
     df_clean.dropna(subset=['timestamp'], inplace=True)
 
     # Manejo de outliers en 'amount' usando IQR
-    q1 = df_clean['amount'].quantile(0.25)
-    q3 = df_clean['amount'].quantile(0.75)
-    iqr = q3 - q1
-    lower_bound = q1 - 1.5 * iqr
-    upper_bound = q3 + 1.5 * iqr
-    df_clean = df_clean[(df_clean['amount'] >= lower_bound) & (df_clean['amount'] <= upper_bound)]
+    # No se eliminan valores extremos para no afectar la detección de fraude.
+    # Se mantiene el rango completo de montos para análisis posterior.
+
+    #q1 = df_clean['amount'].quantile(0.25)
+    #q3 = df_clean['amount'].quantile(0.75)
+    #iqr = q3 - q1
+    #lower_bound = q1 - 1.5 * iqr
+    #upper_bound = q3 + 1.5 * iqr
+    #df_clean = df_clean[(df_clean['amount'] >= lower_bound) & (df_clean['amount'] <= upper_bound)]
 
     return df_clean
     #raise NotImplementedError("clean_data() function needs to be implemented")
@@ -124,33 +129,36 @@ def detect_suspicious_transactions(df):
     """
     TODO: Implement fraud detection logic
 
-    Identify suspicious transactions based on various criteria. Consider:
-    - Unusually high amounts
-    - Multiple failed attempts
-    - High-risk countries or merchants
-    - Unusual transaction patterns
-    - Time-based anomalies
-    - Multiple transactions in short time
+    Detect suspicious transactions based on predefined fraud rules.
 
-    Args:
-        df (pd.DataFrame): Cleaned transaction data
+    Rules:
+    1. Amounts above 99th percentile.
+    2. ≥3 declined attempts by same user.
+    3. Response message contains 'security'.
+    4. Multiple transactions within 1 minute.
+    5. High-value cross-border transactions.
+    6. Transactions between 00:00–05:00.
 
     Returns:
-        tuple: (normal_df, suspicious_df) - DataFrames split by suspicion status
+        tuple: (normal_df, suspicious_df)
     """
     # YOUR CODE HERE
     # Inicializar columna de sospecha
     df = df.copy()
     df['is_suspicious'] = False
 
+    HIGH_AMOUNT_PERCENTILE = 0.99
+    FAILED_ATTEMPT_THRESHOLD = 3
+    NIGHT_START = 0
+    NIGHT_END = 5
     # 1. Montos inusualmente altos (mayores al percentil 99)
-    high_amount_threshold = df['amount'].quantile(0.99)
+    high_amount_threshold = df['amount'].quantile(HIGH_AMOUNT_PERCENTILE)
     df.loc[df['amount'] > high_amount_threshold, 'is_suspicious'] = True
 
     # 2. Múltiples intentos fallidos del mismo usuario (status == 'declined')
     if 'user_id' in df.columns and 'status' in df.columns:
         failed_attempts = df[df['status'].str.lower() == 'declined'].groupby('user_id').size()
-        suspicious_users = failed_attempts[failed_attempts >= 3].index
+        suspicious_users = failed_attempts[failed_attempts >= FAILED_ATTEMPT_THRESHOLD].index
         df.loc[df['user_id'].isin(suspicious_users), 'is_suspicious'] = True
 
     # 3. Flaggear transacciones declined con códigos de seguridad
@@ -170,15 +178,19 @@ def detect_suspicious_transactions(df):
         intl_risk = (df['country'] != df['merchant_country']) & (df['amount'] > high_amount_threshold)
         df.loc[intl_risk, 'is_suspicious'] = True
 
+    NIGHT_START = 0
+    NIGHT_END = 5
     # 6. Otros patrones: transacciones en horarios inusuales (ejemplo: entre 00:00 y 05:00)
     df['hour'] = df['timestamp'].dt.hour
-    df.loc[df['hour'].between(0, 5), 'is_suspicious'] = True
+    df.loc[df['hour'].between(NIGHT_START, NIGHT_END), 'is_suspicious'] = True
 
+    # Limpieza final: eliminar columnas auxiliares antes de retornar
+    for col in ['hour', 'time_diff']:
+        if col in df.columns:
+            df = df.drop(columns=[col])
     # Separar DataFrames
     suspicious_df = df[df['is_suspicious']].drop(columns=['is_suspicious', 'hour'], errors='ignore')
     normal_df = df[~df['is_suspicious']].drop(columns=['is_suspicious', 'hour'], errors='ignore')
-
-    #raise NotImplementedError("detect_suspicious_transactions() function needs to be implemented")
     return normal_df, suspicious_df
 
 
