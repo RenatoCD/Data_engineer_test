@@ -80,7 +80,7 @@ def clean_data(df):
     columnas_criticas = [
         'transaction_id', 'user_id', 'merchant_id', 'amount', 'currency',
         'status', 'timestamp', 'payment_method', 'country',
-        'response_message', 'response_code', 'attempt_number'
+        'response_message', 'attempt_number'
     ]
 
     # Validar que existan las columnas críticas
@@ -154,11 +154,9 @@ def detect_suspicious_transactions(df):
         df.loc[df['user_id'].isin(suspicious_users), 'is_suspicious'] = True
 
     # 3. Flaggear transacciones declined con códigos de seguridad
-    # Adaptado a los datos reales: response_message y response_code
+    # Adaptado a los datos reales: solo response_message
     if 'response_message' in df.columns:
         df.loc[df['response_message'].str.contains('security', case=False, na=False), 'is_suspicious'] = True
-    if 'response_code' in df.columns:
-        df.loc[df['response_code'] == 65, 'is_suspicious'] = True
 
     # 4. Detectar patrones anómalos: múltiples transacciones en menos de 1 minuto por usuario
     if 'user_id' in df.columns:

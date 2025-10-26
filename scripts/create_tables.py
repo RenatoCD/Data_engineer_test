@@ -25,20 +25,21 @@ class DimMerchant(Base):
 class DimPaymentMethod(Base):
     __tablename__ = 'dim_payment_methods'
     payment_method_id = Column(Integer, primary_key=True, autoincrement=True)
-    payment_method = Column(String)
-    payment_provider = Column(String)
+    payment_method = Column(String, nullable=False)
+    
 
 # Dimensión Temporal
 class DimTime(Base):
     __tablename__ = 'dim_time'
     time_id = Column(Integer, primary_key=True, autoincrement=True)
-    timestamp = Column(DateTime)
+    timestamp = Column(DateTime, nullable=False)
     year = Column(Integer)
     month = Column(Integer)
     day = Column(Integer)
     hour = Column(Integer)
     minute = Column(Integer)
     second = Column(Integer)
+    settlement_date = Column(String)  # Fecha en formato YYYY-MM-DD, se llena al cargar los datos
 
 # Tabla de Hechos
 class FactTransaction(Base):
@@ -51,16 +52,8 @@ class FactTransaction(Base):
     amount = Column(Float)
     currency = Column(String)
     status = Column(String)
-    response_code = Column(String)
     response_message = Column(String)
-    fee_percentage = Column(Float)
-    transaction_fee = Column(Float)
-    net_amount = Column(Float)
     attempt_number = Column(Integer)
-    processing_time_ms = Column(Integer)
-    three_ds_verified = Column(String)
-    installments = Column(Integer)
-    is_international = Column(Boolean)
 
 # Crear engine y las tablas
 if __name__ == "__main__":

@@ -185,8 +185,11 @@ Comando de ejecución:
 python scripts/test_connection.py
 ```
 
-### **Selección de columnas y criterio de modelado**
-El modelo dimensional fue diseñado a partir de la inspección de los archivos CSV limpios generados por el pipeline ETL. Se priorizaron las columnas que aportan valor analítico y permiten responder preguntas de negocio relevantes, como usuario, comercio, método de pago, tiempo, montos y métricas transaccionales.
+### **Criterio del modelado**
+
+**Descripción**
+
+Este proyecto implementa un Data Warehouse para transacciones fintech usando PostgreSQL y SQLAlchemy.
 
 Las columnas seleccionadas para cada tabla se eligieron siguiendo estos criterios:
 
@@ -194,15 +197,40 @@ Las columnas seleccionadas para cada tabla se eligieron siguiendo estos criterio
 * Facilitar el análisis: Se incluyeron métricas y atributos clave en la tabla de hechos.
 * Adaptación a los datos reales: El modelo se basa en las columnas realmente disponibles tras la limpieza.
 
-* **Modelo estrella (Star Schema)**
-Se implementó un esquema estrella, estándar en Data Warehousing, que permite consultas rápidas y flexibles para análisis OLAP y BI. El modelo consta de:
 
-**Tabla de hechos** **(fact_transactions):** Centraliza las transacciones y almacena métricas clave, referenciando las dimensiones mediante claves foráneas.
-*Dimensiones:
-**dim_users:** Información relevante del usuario (país, dispositivo, IP, agente).
-**dim_merchants:** Datos del comercio (categoría, país).
-**dim_payment_methods:** Tipo y proveedor de método de pago.
-**dim_time:** Detalles temporales y fecha de liquidación.
+Se utiliza un **modelo estrella (star schema)** con una **tabla de hechos** (fact_transactions) y **dimensiones** (dim_users, dim_merchants, dim_payment_methods, dim_time) para facilitar análisis OLAP y detección de fraude.
+
+### Modelo Estrella
+
+**Tabla de hechos** (fact_transactions): almacena cada transacción con métricas y claves a dimensiones.
+
+| Columna           | Tipo                               | Descripción                |
+| ----------------- | ---------------------------------- | -------------------------- |
+| transaction_id    | String (PK)                        | ID único de la transacción |
+| user_id           | Integer (FK → dim_users)           | Usuario asociado           |
+| merchant_id       | Integer (FK → dim_merchants)       | Comercio asociado          |
+| payment_method_id | Integer (FK → dim_payment_methods) | Método de pago             |
+| time_id           | Integer (FK → dim_time)            | Referencia temporal        |
+| amount            | Float                              | Monto de la transacción    |
+| currency          | String                             | Moneda                     |
+| status            | String                             | Estado de la transacción   |
+| response_message  | String                             | Mensaje del procesador     |
+| attempt_number    | Integer                            | Número de intentos         |
+
+
+**Dimensiones:** describen atributos de usuarios, comercios, métodos de pago y tiempo.
+
+Permite consultas rápidas y agregaciones: monto total por usuario, transacciones por día, análisis de intentos fallidos, etc.
+
+Cada dimensión refleja únicamente los atributos existentes en los datos finales:
+
+* **dim_users → user_id, country**
+
+* **dim_merchants → merchant_id, country**
+
+* **dim_payment_methods → payment_method**
+
+* **dim_time** → descomposición de timestamp en year, month, day, hour, minute, second y settlement_date (calculada durante la carga)
 
 **Script de creación de tablas**
 
