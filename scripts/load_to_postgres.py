@@ -17,7 +17,7 @@ except ImportError as e:
     exit(1)
 
 # Configuración de conexión
-DATABASE_URL = "postgresql+psycopg2://usuario:password@localhost:5432/tu_db"
+DATABASE_URL = "postgresql+psycopg2://postgres:xxx@localhost:5432/db_fintech"
 try:
     engine = create_engine(DATABASE_URL)
     Session = sessionmaker(bind=engine)

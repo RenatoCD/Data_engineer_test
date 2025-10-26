@@ -14,15 +14,11 @@ class DimUser(Base):
     __tablename__ = 'dim_users'
     user_id = Column(Integer, primary_key=True)
     country = Column(String)
-    device_type = Column(String)
-    ip_address = Column(String)
-    user_agent = Column(String)
 
 # Dimensión Comercios
 class DimMerchant(Base):
     __tablename__ = 'dim_merchants'
     merchant_id = Column(Integer, primary_key=True)
-    category = Column(String)
     country = Column(String)
 
 # Dimensión Métodos de Pago
@@ -43,7 +39,6 @@ class DimTime(Base):
     hour = Column(Integer)
     minute = Column(Integer)
     second = Column(Integer)
-    settlement_date = Column(String)
 
 # Tabla de Hechos
 class FactTransaction(Base):
@@ -69,8 +64,8 @@ class FactTransaction(Base):
 
 # Crear engine y las tablas
 if __name__ == "__main__":
-    # Modifica la cadena de conexión según tu entorno
-    engine = create_engine("postgresql+psycopg2://usuario:password@localhost:5432/tu_db")
+    # Cadena de conexión 
+    engine = create_engine("postgresql+psycopg2://postgres:xxxx@localhost:5432/db_fintech")
     Base.metadata.create_all(engine)
     print("Tablas creadas correctamente.")
 
